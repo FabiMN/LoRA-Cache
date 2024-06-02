@@ -3,7 +3,6 @@ import random
 import argparse
 import yaml
 from tqdm import tqdm
-from peft import LoraConfig, get_peft_model, PeftModel, get_peft_model_state_dict, set_peft_model_state_dict, load_peft_weights
 import time
 import copy
 from collections import OrderedDict
@@ -246,15 +245,6 @@ def finetune_model(cfg, injected_clip_model, train_loader_F, val_loader, dataset
         clip_logits = 100. * val_features @ clip_weights
         acc = cls_acc(clip_logits, val_labels)
 
-        if branch != "transformer":
-            del images
-            del target
-            del image_features
-            del val_features
-            del val_labels
-            del clip_logits
-            del clip_weights
-
         if acc > best_acc:
             best_acc = acc
             best_epoch = train_idx
@@ -305,7 +295,7 @@ def main():
     print("\nRunning configs.")
     print(cfg, "\n")
 
-    seeds = [1,2,3]
+    seeds = [1, 2, 3]
     for seed in seeds:
         random.seed(seed)
         torch.manual_seed(seed)
@@ -325,7 +315,7 @@ def main():
                     test_fc = nn.Sequential(OrderedDict([
                             ("Dropout", nn.Dropout(p=0.01)),
                             ("A", nn.Linear(visual_width, rank, bias=False)),
-                            ("B", nn.Linear(rank, visual_width, bias=False)),
+                            ("B", nn.Linear(rank, visual_width*4, bias=False)),
                             ])).to(clip_model.dtype)
                     
                     nn.init.kaiming_uniform_(test_fc.A.weight, a=math.sqrt(5))
@@ -335,7 +325,7 @@ def main():
                     test_fc_text = nn.Sequential(OrderedDict([
                             ("Dropout", nn.Dropout(p=0.01)),
                             ("A", nn.Linear(text_width, rank, bias=False)),
-                            ("B", nn.Linear(rank, text_width, bias=False)),
+                            ("B", nn.Linear(rank, text_width*4, bias=False)),
                             ])).to(clip_model.dtype)
                     
                     nn.init.kaiming_uniform_(test_fc_text.A.weight, a=math.sqrt(5))
@@ -395,7 +385,8 @@ def main():
                     print("\nConstructing cache model by few-shot visual features and labels.")
                     cache_keys, cache_values = build_cache_model(cfg, clip_model, train_loader_cache)
 
-                    if branch != "transformer" or (seed == seeds[0] and shots == shot_list[0]):
+                    # we do not have to load visual features every time if we only train the textual branch
+                    if branch != "transformer" or (seed == seeds[0]):
                         # Pre-load val features
                         print("\nLoading visual features and labels from val set.")
                         val_features, val_labels = pre_load_features(cfg, "val", clip_model, val_loader)

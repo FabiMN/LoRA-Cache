@@ -44,7 +44,14 @@ def clip_classifier_with_grad(classnames, template, clip_model):
         classname = classname.replace('_', ' ')
         texts = [t.format(classname) for t in template]
         texts = clip.tokenize(texts).cuda()
-        class_embedding_mean_normed = checkpoint.checkpoint(text_embeddings_forward, *(clip_model, texts), use_reentrant=False)
+        # prompt ensemble for ImageNet
+        class_embeddings = clip_model.encode_text(texts)
+        class_embeddings_normed = class_embeddings / class_embeddings.norm(dim=-1, keepdim=True)
+        class_embedding_mean = class_embeddings_normed.mean(dim=0)
+        class_embedding_mean_normed = class_embedding_mean / class_embedding_mean.norm()
+
+        # Checkpoint can be used if there is not enough space on the GPU to store the entire back prop graph
+        #class_embedding_mean_normed = checkpoint.checkpoint(text_embeddings_forward, *(clip_model, texts), use_reentrant=False)
         clip_weights.append(class_embedding_mean_normed)
 
     clip_weights = torch.stack(clip_weights, dim=1).cuda()

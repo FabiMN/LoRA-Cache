@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from typing import Tuple, Union
-from peft import get_peft_model, LoraConfig
 
 import numpy as np
 import torch
@@ -98,11 +97,10 @@ class ModifiedResNet(nn.Module):
     - The final pooling layer is a QKV attention instead of an average pool
     """
 
-    def __init__(self, layers, output_dim, heads, input_resolution=224, width=64, return_last_two_layers=False):
+    def __init__(self, layers, output_dim, heads, input_resolution=224, width=64):
         super().__init__()
         self.output_dim = output_dim
         self.input_resolution = input_resolution
-        self.return_last_two_layers = return_last_two_layers
 
         # the 3-layer stem
         self.conv1 = nn.Conv2d(3, width // 2, kernel_size=3, stride=2, padding=1, bias=False)
@@ -263,8 +261,7 @@ class CLIP(nn.Module):
                 output_dim=embed_dim,
                 heads=vision_heads,
                 input_resolution=image_resolution,
-                width=vision_width,
-                return_last_two_layers=return_last_two_layers
+                width=vision_width
             )
         else:
             vision_heads = vision_width // 64
@@ -422,7 +419,7 @@ def build_model(state_dict: dict, return_last_two_layers=False, apply_lora=False
     model = CLIP(
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
-        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers, return_last_two_layers, apply_lora
+        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers
     )
 
     for key in ["input_resolution", "context_length", "vocab_size"]:
