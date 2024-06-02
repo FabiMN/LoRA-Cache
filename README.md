@@ -21,7 +21,7 @@ Run main_mha to run the approach that injects low-rank decomposition matrices in
 
 As an example, to run main.py using the Caltech101 dataset, run the following command:
 ```bash
-python main.py --config configs/Caltech101.yaml
+python main.py --config configs/caltech101.yaml
 ```
 
 ## Acknowledgement
