@@ -132,7 +132,8 @@ class InjectedMlp(nn.Module):
 
         return x
 
-
+"""This class was taken from the Pytorch Repository and modified.
+"""
 class InjectedMultiheadAttention(nn.Module):
     r"""Allows the model to jointly attend to information
     from different representation subspaces as described in the paper:
